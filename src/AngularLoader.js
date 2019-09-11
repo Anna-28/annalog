@@ -2,7 +2,6 @@ class MainCtrl {
 	constructor() {
 		this.stylesheet = 'css/bootstrap.min.css';
 		var theme = JSON.parse(localStorage.getItem('theme'));
-		console.log(theme);
 		if (theme == null) {
 			this.darkmode = false;
 		} else {
