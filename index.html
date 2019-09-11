@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Annalog - Anna's Time Logger</title>
+	<link rel="icon" href="images/icon.ico">
+	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">-->
+	<link rel="stylesheet" href="css/stylesheet.css">
+	
+</head>
+<body id="body" ng-app="myapp" ng-controller="MainCtrl as mc" style="--dark">
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>-->
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.5/angular.min.js"></script>
+	<script src="src/Timelogger.js"></script>
+	<script src="src/TimeLog.js"></script>
+	<script src="src/Project.js"></script>
+	<script src="src/AngularLoader.js"></script>
+	<script src="src/onReadFile.js"></script>
+	<script src="src/main.js"></script>
+	
+	
+	<div class="container">
+		<!--h1>Annalog <span class="glyphicon glyphicon-time"></span></h1-->
+		<img id="logo" src="images/annalogo.png">
+		<h2>Time Log Table</h2>
+		<div ng-if="mc.timelogger.checkTimelogs()">
+			<input class="form-control" id="searchInput" type="text" placeholder="Search time logs...">
+			<br>
+			<table class="table table-hover">
+				<thead>
+					<tr class="info">
+						<th>Project</th>
+						<th>Phase</th>
+						<th>Date</th>
+						<th>Start</th>
+						<th>Interrupt Time</th>
+						<th>Finish</th>
+						<th>Delta Time</th>
+						<th>Notes</th>
+						<th></th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody id="timelogTable">
+					<tr data-ng-repeat="log in mc.timelogger.allTimelogs | orderBy:'start'">
+						<td>{{ log.project }}</td>
+						<td>{{ log.phase }}</td>
+						<!-- <td>{{ log.date.getFullYear() }}-{{ log.date.getMonth() }}-{{ log.date.getDate() }}</td>-->
+						<!-- Use angular to convert dates to readable formats -->
+						<td>{{ log.date | date : 'longDate' }}</td>
+						<!-- <td>{{ log.getStartTime() }}</td> -->
+						<td>{{ log.start | date : 'shortTime' }}</td>
+						<td>{{ log.intTime | number : 0 }} minute<ng-pluralize count="log.intTime | number : 0" when="{'one': '', 'other': 's'}"></ng-pluralize></td>
+						<!-- <td>{{ log.getFinishTime() }}</td> -->
+						<td>{{ log.finish | date : 'shortTime' }}</td>
+						<td ng-if="log.finish != null">{{ ((log.finish - log.start) / 3600000) - log.intTime / 60 | number : 2 }} hour<ng-pluralize count="((log.finish - log.start) / 3600000) - log.intTime / 60 | number : 2" when="{'one': '', 'other': 's'}"></ng-pluralize></td>
+						<!-- replace with finish now button if there is no finish date -->
+						<td ng-if="log.finish == null"><button type="button" class="btn btn-success btn-sm" data-toggle="tooltip" title="Finish this time log" ng-click="mc.timelogger.finishTimelog(log.id)">Finish Now</button></td>
+						<!--<td ng-show="log.finish == null"></td>-->
+						<td>
+							<!-- disable notes view button if there are no notes -->
+							<button ng-if="log.notes == null" type="button" class="btn btn-warning btn-sm disabled" title="This time log has no notes"><span class="glyphicon glyphicon-book"></span></button>
+							<button ng-if="log.notes != null" type="button" class="btn btn-warning btn-sm" data-toggle="modal" title="View notes for this time log" data-target="#viewNotes{{ log.id }}"><span class="glyphicon glyphicon-book"></span></button>
+							<!-- This allows the search bar to search by notes -->
+							<span hidden>{{ log.notes }}</span>
+						</td>
+						<td><button type="button" class="btn btn-info btn-sm" data-toggle="modal" title="Edit this time log" data-target="#editTimelog{{ log.id }}" ng-click="mc.timelogger.backupTimelog(log.id)"><span class="glyphicon glyphicon-pencil"></span></button></td>
+						
+						<!--<td><a href="" ng-click="mc.removeTimelog(log.id)">remove</a></td>-->
+						<td><button type="button" class="btn btn-danger btn-sm" data-toggle="modal" title="Remove this time log" data-target="#removeTimelog{{ log.id }}"><span class="glyphicon glyphicon-remove"></span></button></td>
+					</tr>
+				</tbody>
+			</table>
+			
+			<!-- Search bar system for table -->
+			<script>
+				$(document).ready(function(){
+					$("#searchInput").on("keyup", function() {
+						var value = $(this).val().toLowerCase();
+						$("#timelogTable tr").filter(function() {
+							$(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+						});
+					});
+				});
+			</script>
+			
+			
+			<!------- Dialog boxes ------->
+			<!-- Notes dialog -->
+			<div data-ng-repeat="log in mc.timelogger.allTimelogs" class="modal fade" id="viewNotes{{ log.id }}" role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal">&times;</button>
+							<h3 class="modal-title">Time log Notes</h3>
+						</div>
+						<div class="modal-body">
+							<!--<h4 data-ng-if="log.project"><b>Project:</b> {{log.project}}</h4>
+							<h4 data-ng-if="log.phase"><b>Phase:</b> {{log.phase}}</h4>-->
+							<dl class="list-group">
+								<li class="list-group-item"><dt>Project:</dt> {{ log.project }}</li>
+								<li class="list-group-item"><dt>Phase:</dt> {{ log.phase }}</li>
+								<li class="list-group-item"><dt>Start Time:</dt> {{ log.start | date : "h:mm a' ('MMMM d, y')'" }}</li>
+								<li class="list-group-item"><dt>Finish Time:</dt> {{ log.finish | date : "h:mm a' ('MMMM d, y')'" }}</li>
+							</dl>
+							<h4><b>Notes:</b></h4>
+							<p class="well" style="white-space: pre-wrap">{{ log.notes }}</p>
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Edit dialog -->
+			<div data-ng-repeat="log in mc.timelogger.allTimelogs" class="modal fade" id="editTimelog{{ log.id }}" role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" ng-click="mc.timelogger.restoreTimelog(log.id)" data-dismiss="modal">&times;</button>
+							<h3 class="modal-title">Edit time log</h3>
+						</div>
+						<div class="modal-body">
+							<h4>Change the values below and push save to update this time log.</h4>
+							<form class="well">
+								<!--<div class="form-group">
+									<label for="project">Project Name</label>
+									<input class="form-control" type="text" name="project" ng-model="log.project" placeholder="Enter Project Name">
+								</div>-->
+								<div class="form-group">
+									<label for="project">Project</label>
+									<input class="form-control" type="text" list="projects" name="project" ng-model="log.project" placeholder="Enter Project Name" maxlength="30">
+										<datalist id="projects">
+											<option ng-repeat="project in mc.timelogger.allProjects" value="{{project.name}}" >{{project.name}}</option>
+										</datalist>
+								</div>
+								<div class="form-group">
+									<label for="phase">Phase</label>
+									<select class="form-control" name="phase" ng-model="log.phase">
+										<option ng-repeat="option in mc.phases" value="{{option.name}}" >{{option.name}}</option>
+									</select>
+								</div>
+								<!-- <input type="text" name="phase" ng-model="mc.input.Phase" placeholder="Phase"> -->
+								<div class="form-group">
+									<label for="date">Date</label>
+									<input class="form-control" type="date" name="date" ng-model="log.date">
+								</div>
+								<div class="form-group">
+									<label for="start">Start</label>
+									<input class="form-control" type="datetime-local" name="start" ng-model="log.start" required>
+								</div>
+								<div class="form-group">
+									<label for="inttime">IntTime</label>
+									<input class="form-control" type="number" name="inttime" ng-model="log.intTime" placeholder="Enter Interrupt Time (minutes)" value="{{ log.intTime }}">
+								</div>
+								<div class="form-group">
+									<label for="finish">Finish</label>
+									<input class="form-control" type="datetime-local" name="finish" ng-model="log.finish">
+								</div>
+								<div class="form-group">
+									<label for="notes">Notes</label>
+									<textarea class="form-control" rows="5" name="notes" ng-model="log.notes" placeholder="Enter Notes"></textarea>
+								</div>
+							</form>
+							
+							<br>
+							<div class="yes-no-box">
+								<button type="button" class="btn btn-success btn-lg" data-dismiss="modal" ng-click="mc.timelogger.removeBackupTimelog(log.id)">Save</button>
+								<button type="button" class="btn btn-info btn-lg" data-dismiss="modal" ng-click="mc.timelogger.restoreTimelog(log.id)">Cancel</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- Delete dialog -->
+			<!-- Dialog box to confirm if they want to delete this timelog-->
+			<div data-ng-repeat="log in mc.timelogger.allTimelogs" class="modal fade" id="removeTimelog{{ log.id }}" role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal">&times;</button>
+							<h3 class="modal-title">Remove time log</h3>
+						</div>
+						<div class="modal-body">
+							<h4>Are you sure you want to remove this time log?</h4>
+							<dl class="list-group">
+								<li class="list-group-item"><dt>Project:</dt> {{ log.project }}</li>
+								<li class="list-group-item"><dt>Phase:</dt> {{ log.phase }}</li>
+								<li class="list-group-item"><dt>Date:</dt> {{ log.date | date : 'fullDate' }}</li>
+								<li class="list-group-item"><dt>Start Time:</dt> {{ log.start | date : "h:mm a' ('MMMM d, y')'" }}</li>
+								<li class="list-group-item"><dt>Interrupt Time:</dt> {{ log.intTime }} minutes</li>
+								<li class="list-group-item"><dt>Finish Time:</dt> {{ log.finish | date : "h:mm a' ('MMMM d, y')'" }}</li>
+								<li class="list-group-item" ng-hide="log.finish == null"><dt>Delta Time:</dt> {{ ((log.finish - log.start) / 60000) - log.intTime | number : 0 }} minutes</li>
+								<li class="list-group-item" style="white-space: pre-wrap"><dt>Notes:</dt>{{ log.notes }}</li>
+							</dl>
+							
+							<div class="yes-no-box">
+								<button type="button" class="btn btn-danger btn-lg" data-dismiss="modal" ng-click="mc.removeTimelog(log.id)">Remove</button>
+								<button type="button" class="btn btn-success btn-lg" data-dismiss="modal">Keep</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col-sm-6">
+					<h3>Save current time log<span ng-if="mc.timelogger.allTimelogs.length > 1">s</span></h3>
+					<button class="btn btn-default btn-lg" ng-click="mc.saveTimelogs()"><span class="glyphicon glyphicon-save"></span> Save</button>
+					<!--<button ng-click="mc.timelogger.saveTimelogsToFile()">Save</button>-->
+					<form>
+						<input type="checkbox" name="spreadsheet" ng-model="mc.savespreadsheet">Use spreadsheet format</input>
+					</form>
+					<form ng-if="mc.timelogger.allProjects.length > 1">
+						<div ng-if="!mc.savespreadsheet"><input type="checkbox" name="saveall" ng-model="mc.saveall">Save all time logs</input></div>
+					</form>
+				</div>
+				<div class="col-sm-6" ng-if="mc.savespreadsheet">
+					<br>
+					<h4>Spreadsheet Save Format</h4>
+					<p>This option saves the time logs in a CSV file with hours per week for each project.</p>
+					<p>This format is useful for importing into a spreadsheet and creating line graphs like burndown charts.</p>
+				</div>
+				<div class="col-sm-6" ng-if="!mc.saveall&&!mc.savespreadsheet">
+					<!-- allow them to pick which projects to save time logs from -->
+					<!-- only show if there are more than one projects -->
+					<div class="form-group">
+						<br>
+						<label for="saveprojects">Save time logs from projects:</label>
+						<select class="form-control" name="saveprojects" ng-model="mc.saveprojects" multiple>
+							<!--<option value="All" selected>All Projects</option>-->
+							<option ng-repeat="project in mc.timelogger.allProjects" value="{{project.name}}" >{{project.name}}</option>
+						</select>
+					</div>
+				</div>
+			</div>
+		
+			<h3>Clear current time log<span ng-if="mc.timelogger.allTimelogs.length > 1">s</span></h3>
+			<button class="btn btn-default btn-lg" data-toggle="modal" data-target="#clearTimelogs"><span class="glyphicon glyphicon-trash"></span> Clear</button>
+			
+			<div class="modal fade" id="clearTimelogs" role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal">&times;</button>
+							<h3 class="modal-title">Clear time logs</h3>
+						</div>
+						<div class="modal-body">
+							<h4>Are you sure you want remove all time logs?</h4>
+							<br>
+							
+							<div class="yes-no-box">
+								<button type="button" class="btn btn-danger btn-lg" data-dismiss="modal" ng-click="mc.timelogger.clearTimelogs()">Yes</button>
+								<button type="button" class="btn btn-success btn-lg" data-dismiss="modal">No</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		
+		</div>
+		
+		<h3>Upload existing time logs</h3>
+		<input class="btn btn-default btn-lg" type="file" style="display:block" on-read-file="mc.showContent(fileContent)" />
+		
+		<div class="row" ng-if="mc.timelogger.checkTimelogs()">
+			<div class="col-sm-6">
+			<h3>Interrupting Time</h3>
+				<p>Total: {{ mc.timelogger.getTotalIntTime() | number : 0}} minutes</p>
+				<p>Average: {{ mc.timelogger.getAverageIntTime() | number : 2 }} minutes</p>
+			</div>
+			
+			<div class="col-sm-6">
+			<h3>Delta Time</h3>
+				<p>Total: {{ mc.timelogger.getTotalDeltaTime() / 60 | number : 2 }} hours</p>
+				<p>Average: {{ mc.timelogger.getAverageDeltaTime() | number : 2 }} minutes</p>
+			</div>
+			<div class="col-sm-12">
+				<h3>Project Information</h3>
+				<table class="table table-hover">
+					<thead>
+						<tr class="success">
+							<th>Name</th>
+							<th>Start Time</th>
+							<th>Latest Time</th>
+							<th>Interrupting Time</th>
+							<th>Delta Time</th>
+							<th></th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr ng-repeat="project in mc.timelogger.allProjects | orderBy:'getStartTime()'">
+							<td>{{ project.name }}</td>
+							<td>{{ project.getStartTime() | date : "MMMM d, y' at 'h:mm a" }}</td>
+							<td>{{ project.getLastTime() | date : "MMMM d, y' at 'h:mm a" }}</td>
+							<td>{{ project.getIntTime() / 60 | number : 2 }} hour<ng-pluralize count="project.getIntTime() / 60 | number : 2" when="{'one': '', 'other': 's'}"></ng-pluralize></td>
+							<td>{{ project.getDeltaTime() / 60 | number : 2 }} hour<ng-pluralize count="project.getDeltaTime() / 60 | number : 2" when="{'one': '', 'other': 's'}"></ng-pluralize></td>
+							<td><button type="button" class="btn btn-info btn-sm" data-toggle="modal" title="Edit this project" data-target="#editProject{{ project.getNameNoSpaces() }}"><span class="glyphicon glyphicon-pencil"></span></button></td>
+							<td><button type="button" class="btn btn-danger btn-sm" data-toggle="modal" title="Remove this project" data-target="#removeProject{{ project.getNameNoSpaces() }}"><span class="glyphicon glyphicon-remove"></span></button></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			
+			<div data-ng-repeat="project in mc.timelogger.allProjects" class="modal fade" id="removeProject{{ project.getNameNoSpaces() }}" role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal">&times;</button>
+							<h3 class="modal-title">Remove Project: {{project.name}}</h3>
+						</div>
+						<div class="modal-body">
+							<h4>Are you sure you want to remove this project and all of it's time logs?</h4>
+							<dl class="list-group">
+								<li class="list-group-item"><dt>Name:</dt> {{ project.name }}</li>
+								<li class="list-group-item"><dt>Start Time:</dt> {{ project.getStartTime() | date : "MMMM d, y' at 'h:mm a" }}</li>
+								<li class="list-group-item"><dt>Latest Time:</dt> {{ project.getLastTime() | date : "MMMM d, y' at 'h:mm a" }}</li>
+								<li class="list-group-item"><dt>Interrupt Time:</dt> {{ project.getIntTime() / 60 | number : 2 }} hour<ng-pluralize count="project.getIntTime() / 60 | number : 2" when="{'one': '', 'other': 's'}"></ng-pluralize></li>
+								<li class="list-group-item"><dt>Delta Time:</dt> {{ project.getDeltaTime() / 60 | number : 2 }} hour<ng-pluralize count="project.getDeltaTime() / 60 | number : 2" when="{'one': '', 'other': 's'}"></ng-pluralize></li>
+							</dl>
+							<h4>Time Logs</h4>
+							<table class="table table-hover">
+								<thead>
+									<tr class="danger">
+										<th>Phase</th>
+										<th>Date</th>
+										<th>Start</th>
+										<th>Int. Time</th>
+										<th>Finish</th>
+										<th>Delta Time</th>
+									</tr>
+								</thead>
+								<tbody id="timelogTable">
+									<tr data-ng-repeat="log in mc.timelogger.findTimelogsInProject(project.name) | orderBy:'start'">
+										<td>{{ log.phase }}</td>
+										<td>{{ log.date | date : 'mediumDate' }}</td>
+										<td>{{ log.start | date : 'shortTime' }}</td>
+										<td>{{ log.intTime | number : 0 }} minute<ng-pluralize count="log.intTime | number : 0" when="{'one': '', 'other': 's'}"></ng-pluralize></td>
+										<td>{{ log.finish | date : 'shortTime' }}</td>
+										<td ng-if="log.finish != null">{{ ((log.finish - log.start) / 3600000) - log.intTime / 60 | number : 2 }} hour<ng-pluralize count="((log.finish - log.start) / 3600000) - log.intTime / 60 | number : 2" when="{'one': '', 'other': 's'}"></ng-pluralize></td>
+										<td ng-if="log.finish == null"></td>
+										<!--<td ng-show="log.finish == null"></td>-->
+									</tr>
+								</tbody>
+							</table>
+							<div class="yes-no-box">
+								<button type="button" class="btn btn-danger btn-lg" data-dismiss="modal" ng-click="mc.timelogger.removeTimelogsFromProject(project.name)">Remove</button>
+								<button type="button" class="btn btn-success btn-lg" data-dismiss="modal">Keep</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div data-ng-repeat="project in mc.timelogger.allProjects" class="modal fade" id="editProject{{ project.getNameNoSpaces() }}" role="dialog">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal">&times;</button>
+							<h3 class="modal-title">Edit project: {{project.name}}</h3>
+						</div>
+						<div class="modal-body">
+							<div class="form-group">
+								<label for="name"><h4>Update project name.</h4></label>
+								<input class="form-control" type="text" name="name" ng-model="newProjectName" placeholder="Project Name" maxlength="30">
+							</div>
+							
+							<br>
+							<div class="yes-no-box">
+								<button ng-if="newProjectName != null" type="button" class="btn btn-success btn-lg" data-dismiss="modal" ng-click="mc.updateProjectName(project.name, newProjectName)">Save</button>
+								<button ng-if="newProjectName == null" type="button" class="btn btn-success btn-lg disabled">Save</button>
+								<button type="button" class="btn btn-info btn-lg" data-dismiss="modal">Cancel</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<div ng-if="mc.timelogger.checkTimelogs()">
+			<h3>Correlation Coefficient of Interrupt and Delta times: <b>{{ mc.timelogger.getCorrelationCoefficient() | number : 2 }}</b></h3>
+		</div>
+		
+		<h2>Record a new time log</h2>
+		<button type="button" class="btn btn-success btn-lg" id="startbtn" ng-click="mc.recordTimelog()"><span class="glyphicon glyphicon-play"></span> Start</button>
+		<button type="button" class="btn btn-warning btn-lg disabled" id="pausebtn" ng-click="mc.timelogger.recordTimelog('pause')"><span class="glyphicon glyphicon-pause"></span> Pause</button>
+		<button type="button" class="btn btn-danger btn-lg disabled" id="stopbtn" ng-click="mc.timelogger.recordTimelog('stop')"><span class="glyphicon glyphicon-stop"></span> Stop</button>
+		
+		<h2>Add a new time log</h2>
+		<form ng-submit="mc.addTimelog()" class="well">
+			<!--<div class="form-group">
+				<label for="project">Project</label>
+				<input class="form-control" type="text" name="project" ng-model="mc.input.Project" placeholder="Enter Project Name">
+			</div>-->
+			<div class="form-group">
+				<label for="project">Project</label>
+				<input class="form-control" type="text" list="projects" name="project" ng-model="mc.input.Project" placeholder="Enter Project Name" maxlength="30">
+					<datalist id="projects">
+						<option ng-repeat="project in mc.timelogger.allProjects" value="{{project.name}}" >{{project.name}}</option>
+					</datalist>
+			</div>
+			<div class="form-group">
+				<label for="phase">Phase</label>
+				<select class="form-control" name="phase" ng-model="mc.input.Phase">
+					<option ng-repeat="option in mc.phases" value="{{option.name}}" >{{option.name}}</option>
+				</select>
+			</div>
+			<!-- <input type="text" name="phase" ng-model="mc.input.Phase" placeholder="Phase"> -->
+			<div class="form-group">
+				<label for="date">Date</label>
+				<input class="form-control" type="date" name="date" ng-model="mc.input.PDate">
+			</div>
+			<div class="form-group">
+				<label for="start">Start <span style="color:red">*</span></label>
+				<input class="form-control" type="datetime-local" name="start" ng-model="mc.input.Start" required>
+			</div>
+			<div class="form-group">
+				<label for="inttime">IntTime</label>
+				<input class="form-control" type="number" name="inttime" ng-model="mc.input.IntTime" placeholder="Enter Interrupt Time (minutes)">
+			</div>
+			<div class="form-group">
+				<label for="finish">Finish</label>
+				<input class="form-control" type="datetime-local" name="finish" ng-model="mc.input.Finish">
+			</div>
+			<div class="form-group">
+				<label for="notes">Notes</label>
+				<textarea class="form-control" rows="5" name="notes" ng-model="mc.input.Notes" placeholder="Enter Notes"></textarea>
+			</div>
+			<p><span style="color:red">*</span> indicates this field is required.</p>
+			<input class="btn btn-default btn-lg" type="submit" value="Add Time log">
+			<!--<button ng-click="mc.addTimelog()">Add</button>-->
+		</form>
+		
+		
+	</div>
+	
+	
+
+		
+</body>
+</html>

@@ -1,0 +1,9 @@
+.yes-no-box {
+    display: flex;
+    justify-content: space-around;
+    padding: 0 3em;
+}
+
+.yes-no-box button {
+	width: 8em;
+}
