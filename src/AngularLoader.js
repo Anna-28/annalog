@@ -1,5 +1,13 @@
 class MainCtrl {
 	constructor() {
+		this.stylesheet = 'css/bootstrap.min.css';
+		var theme = JSON.parse(localStorage.getItem('theme'));
+		console.log(theme);
+		if (theme == null) {
+			this.darkmode = false;
+		} else {
+			this.setStyle(theme)
+		}
 		this.timelogger = new Timelogger();
 		this.content = [];
 		var data = JSON.parse(localStorage.getItem('timelogs'));
@@ -181,5 +189,16 @@ class MainCtrl {
 		}
 		
 		this.setUp();
+	}
+	
+	setStyle(style) {
+		if (style == 'light') {
+			this.stylesheet = 'css/bootstrap.min.css';
+			this.darkmode = false;
+		} else if (style == 'dark') {
+			this.stylesheet = 'css/bootstrap-cyborg.min.css';
+			this.darkmode = true;
+		}
+		localStorage.setItem('theme', JSON.stringify(style));
 	}
 }

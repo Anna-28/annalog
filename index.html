@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="annalog" ng-controller="MainCtrl as mc">
 <head>
 	<meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Annalog - Anna's Time Logger</title>
 	<link rel="icon" href="images/icon.ico">
-	<link href="css/bootstrap.min.css" rel="stylesheet">
+	<link href="{{ mc.stylesheet }}" rel="stylesheet">
 	<!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">-->
 	<link rel="stylesheet" href="css/stylesheet.css">
 	
 </head>
-<body id="body" ng-app="myapp" ng-controller="MainCtrl as mc" style="--dark">
+<body id="body">
 	
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
 	<script src="js/bootstrap.min.js"></script>
@@ -26,8 +26,16 @@
 	
 	
 	<div class="container">
-		<!--h1>Annalog <span class="glyphicon glyphicon-time"></span></h1-->
-		<img id="logo" src="images/annalogo.png">
+		<div class ="row">
+			<div class="col-lg-11">
+				<!--h1>Annalog <span class="glyphicon glyphicon-time"></span></h1-->
+				<img id="logo" src="images/annalogo.png">
+			</div>
+			<div class="col-lg-1 text-right">
+				<h2><button ng-if="!mc.darkmode" ng-click="mc.setStyle('dark')" type="button" class="btn btn-default btn-lg" title="Switch to dark mode"><span class="glyphicon glyphicon-star"></span></button>
+				<button ng-if="mc.darkmode" ng-click="mc.setStyle('light')" type="button" class="btn btn-default btn-lg" title="Switch to light mode"><span class="glyphicon glyphicon-star"></span></button></h2>
+			</div>
+		</div>
 		<h2>Time Log Table</h2>
 		<div ng-if="mc.timelogger.checkTimelogs()">
 			<input class="form-control" id="searchInput" type="text" placeholder="Search time logs...">
