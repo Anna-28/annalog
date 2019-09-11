@@ -24,7 +24,11 @@ class Project {
 	}
 	
 	getNameNoSpaces() {
-		return this.name.replace(/\s+/g, '-');
+		if ( this.name != null ) {
+			return this.name.replace(/\s+/g, '-');
+		} else {
+			return '';
+		}
 	}
 	
 	toString() {
