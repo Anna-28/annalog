@@ -407,6 +407,21 @@ class Timelogger {
 		return total;
 	}
 	
+	getTotalDevelopmentTime() {
+		let total = 0;
+		this.allTimelogs.forEach((aTimelog) => {
+			if ( aTimelog.getDeltaTime() != null ) {
+				if ( aTimelog.phase == "Development" ) {
+					total = total + aTimelog.getDeltaTime();
+				}
+				//console.log('+' + aTimelog.getDeltaTime() + ' =' + total); 
+			}
+		});
+		//console.log('Done: ' + total);
+		return total;
+	}
+	
+	
 	getAverageDeltaTime() {
 		let total = this.getTotalDeltaTime();
 		let count = this.allTimelogs.length;
