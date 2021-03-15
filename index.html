@@ -280,17 +280,22 @@
 		<input class="btn btn-default btn-lg" type="file" style="display:block" on-read-file="mc.showContent(fileContent)" />
 		
 		<div class="row" ng-if="mc.timelogger.checkTimelogs()">
-			<div class="col-sm-6">
+			<div class="col-sm-4">
 			<h3>Interrupting Time</h3>
 				<p>Total: {{ mc.timelogger.getTotalIntTime() | number : 0}} minutes</p>
 				<p>Average: {{ mc.timelogger.getAverageIntTime() | number : 2 }} minutes</p>
 			</div>
 			
-			<div class="col-sm-6">
+			<div class="col-sm-4">
 			<h3>Delta Time</h3>
 				<p>Total: {{ mc.timelogger.getTotalDeltaTime() / 60 | number : 2 }} hours</p>
 				<p>Average: {{ mc.timelogger.getAverageDeltaTime() | number : 2 }} minutes</p>
-				<p>Development: {{ mc.timelogger.GetDevelopmentTime() | number : 2 }} hours<p>
+			</div>
+			
+			<div class="col-sm-4">
+			<h3>Development Time</h3>
+				<p>Total: {{ mc.timelogger.getTotalDevelopmentTime() / 60 | number : 2 }} hours<p>
+				<p>Other Time: {{ (mc.timelogger.getTotalDeltaTime() - mc.timelogger.getTotalDevelopmentTime()) / 60 | number : 2 }} hours<p>
 			</div>
 			<div class="col-sm-12">
 				<h3>Project Information</h3>
